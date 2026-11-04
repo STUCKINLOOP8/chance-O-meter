@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RapidGo - Liquid Glass Intelligent Commute</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif; }
+
+    /* Pure Apple/visionOS Liquid Glass Design System */
+    .liquid-glass-nav {
+      background: rgba(255, 255, 255, 0.75);
+      backdrop-filter: blur(28px) saturate(190%);
+      -webkit-backdrop-filter: blur(28px) saturate(190%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.8);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.04);
+    }
+
+    .liquid-glass-drawer {
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.86) 0%, rgba(248, 250, 252, 0.92) 100%);
+      backdrop-filter: blur(36px) saturate(210%);
+      -webkit-backdrop-filter: blur(36px) saturate(210%);
+      border-top: 1px solid rgba(255, 255, 255, 0.95);
+      box-shadow: 0 -16px 40px -8px rgba(15, 23, 42, 0.12), inset 0 1px 1px 0 rgba(255, 255, 255, 0.9);
+    }
+
+    .liquid-glass-card {
+      background: rgba(255, 255, 255, 0.65);
+      backdrop-filter: blur(20px) saturate(180%);
+      -webkit-backdrop-filter: blur(20px) saturate(180%);
+      border: 1px solid rgba(255, 255, 255, 0.85);
+      box-shadow: 0 8px 24px -4px rgba(0, 0, 0, 0.05), inset 0 1px 1px 0 rgba(255, 255, 255, 0.95);
+      transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .liquid-glass-pill {
+      background: rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.9);
+      box-shadow: 0 6px 20px -2px rgba(0, 0, 0, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.9);
+    }
+
+    .liquid-btn-dark {
+      position: relative;
+      overflow: hidden;
+      background: #0F172A;
+      transition: all 0.25s ease;
+    }
+    .liquid-btn-dark::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 50%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.2) 0%, rgba(255, 255, 255, 0) 100%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    .liquid-btn-green {
+      position: relative;
+      overflow: hidden;
+      background: linear-gradient(135deg, #059669 0%, #047857 100%);
+      transition: all 0.25s ease;
+    }
+    .liquid-btn-green::after {
+      content: '';
+      position: absolute;
+      top: 0; left: 0; right: 0; height: 50%;
+      background: linear-gradient(180deg, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 100%);
+      pointer-events: none;
+      border-radius: inherit;
+    }
+
+    /* Native Radar Pulse Animation */
+    @keyframes radar-ripple {
+      0% { transform: scale(0.6); opacity: 0.9; }
+      100% { transform: scale(2.4); opacity: 0; }
+    }
+    .radar-ping-1 { animation: radar-ripple 2.4s cubic-bezier(0, 0.2, 0.8, 1) infinite; }
+    .radar-ping-2 { animation: radar-ripple 2.4s cubic-bezier(0, 0.2, 0.8, 1) infinite 0.8s; }
+
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-slate-200 via-slate-100 to-indigo-100/70 text-slate-900 flex justify-center items-center min-h-screen p-0 sm:p-6 select-none relative overflow-hidden">
+
+  <!-- Subtle Ambient Glows Behind Phone Frame for Specular Contrast -->
+  <div class="absolute -top-32 -left-32 w-80 h-80 bg-amber-200/40 rounded-full blur-3xl pointer-events-none"></div>
+  <div class="absolute -bottom-32 -right-32 w-80 h-80 bg-indigo-200/50 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Mobile Device Shell Wrapper -->
+  <div class="relative w-full max-w-[412px] h-[100dvh] sm:h-[840px] bg-slate-900 sm:rounded-[40px] shadow-[0_24px_60px_-10px_rgba(15,23,42,0.22)] overflow-hidden flex flex-col border-0 sm:border-[8px] sm:border-slate-800/80 z-10">
+    
+    <!-- Top System Liquid Glass Bar -->
+    <header class="liquid-glass-nav px-5 pt-3.5 pb-2.5 flex justify-between items-center z-30 shrink-0">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse"></span>
+        <span class="text-xs font-black tracking-tight text-slate-950">RAPID<span class="text-amber-500">GO</span></span>
+        <span class="text-[9px] text-slate-600 bg-white/70 px-1.5 py-0.5 rounded-md font-bold border border-slate-200/60">Delhi NCR</span>
+      </div>
+      <div class="flex items-center space-x-2">
+        <span id="liveClock" class="text-xs font-bold tabular-nums text-slate-700">14:12</span>
+        <span id="trafficBadge" class="bg-amber-500/15 text-amber-950 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs">
+          <span id="trafficDot" class="w-1.5 h-1.5 rounded-full bg-amber-500"></span>
+          <span id="trafficLabel">Peak Traffic • 1.3x</span>
+        </span>
+      </div>
+    </header>
+
+    <!-- Map View Container -->
+    <div class="relative flex-1 w-full bg-slate-100 overflow-hidden min-h-[300px]">
+      <div id="map" class="w-full h-full z-10"></div>
+      
+      <!-- Liquid Glass Distance & Live Delay Pill Overlay -->
+      <div class="absolute top-3 left-3 right-3 z-[400] flex items-center justify-between pointer-events-none">
+        <div class="liquid-glass-pill px-3 py-1.5 text-[11px] font-bold text-slate-800 flex items-center gap-2 pointer-events-auto rounded-2xl">
+          <span class="text-slate-500 font-medium">Route:</span>
+          <span id="routeDistanceDisplay" class="font-extrabold text-slate-950">18.4 km</span>
+          <span class="text-slate-300">•</span>
+          <span id="routeDurationDisplay" class="font-extrabold text-slate-950">~36 mins</span>
+          <span id="delayBadge" class="text-[9px] bg-amber-500/20 text-amber-950 font-bold px-1.5 py-0.2 rounded-md border border-amber-500/30">+9m delay</span>
+        </div>
+
+        <!-- Map Layer Toggle -->
+        <div class="liquid-glass-pill p-0.5 flex items-center space-x-0.5 pointer-events-auto rounded-xl">
+          <button id="layerStreetBtn" class="bg-slate-900 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition shadow-xs">Map</button>
+          <button id="layerSatelliteBtn" class="text-slate-700 hover:text-slate-950 px-2.5 py-1 rounded-lg text-[10px] font-bold transition">Satellite</button>
+        </div>
+      </div>
+
+      <!-- Quick Mode Selector (Set Pickup vs Drop) -->
+      <div class="absolute bottom-16 left-3 z-[400] liquid-glass-pill p-1 flex items-center space-x-1 rounded-2xl">
+        <button id="modePickupBtn" class="text-[10px] font-extrabold px-2.5 py-1 rounded-xl bg-slate-900 text-white transition flex items-center gap-1.5 shadow-xs">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Pickup
+        </button>
+        <button id="modeDropBtn" class="text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-700 hover:text-slate-950 transition flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-rose-500"></span> Drop
+        </button>
+      </div>
+
+      <!-- Floating Map Buttons (GPS & Recenter) -->
+      <div class="absolute bottom-16 right-3 z-[400] flex flex-col space-y-2">
+        <button id="liveGpsBtn" class="liquid-glass-pill text-slate-800 p-2.5 rounded-2xl shadow-md hover:scale-105 active:scale-95 transition" title="Use Live GPS">
+          <svg class="w-4 h-4 text-emerald-600" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M5.05 4.05a7 7 0 119.9 9.9L10 18.9l-4.95-4.95a7 7 0 010-9.9zM10 11a2 2 0 100-4 2 2 0 000 4z" clip-rule="evenodd"/></svg>
+        </button>
+        <button id="recenterBtn" class="liquid-glass-pill text-slate-800 p-2.5 rounded-2xl shadow-md hover:scale-105 active:scale-95 transition" title="Recenter Route">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Bottom Sheet / Liquid Glass Workflow Drawer -->
+    <div id="bottomDrawer" class="liquid-glass-drawer z-20 flex flex-col transition-all duration-300 max-h-[66%] overflow-y-auto no-scrollbar rounded-t-[36px]">
+
+      <!-- Minimal Pull Bar -->
+      <div class="w-full flex justify-center pt-3 pb-1 shrink-0">
+        <div class="w-9 h-1.5 bg-slate-400/40 rounded-full"></div>
+      </div>
+
+      <!-- ============================================== -->
+      <!-- STATE 1: RIDE SELECTION & LOCATION SEARCH     -->
+      <!-- ============================================== -->
+      <div id="stateRideSelection" class="p-4 pt-1 space-y-3">
+        
+        <!-- Liquid Glass Location Card with Native Interchange Button -->
+        <div class="relative liquid-glass-card rounded-[22px] p-3.5 shadow-sm">
+          
+          <!-- Central Circular Interchange Button -->
+          <button id="interchangeBtn" class="absolute right-3.5 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-white/95 border border-slate-300/80 shadow-md flex items-center justify-center text-slate-700 hover:text-slate-950 active:scale-90 transition z-10" title="Interchange Pickup & Drop">
+            <svg class="w-4 h-4 transition-transform duration-300" id="interchangeIcon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+            </svg>
+          </button>
+
+          <div class="space-y-2.5 pr-8">
+            <!-- Pickup Row -->
+            <div class="flex items-center space-x-2.5">
+              <span class="w-3 h-3 rounded-full bg-emerald-500 shrink-0 shadow-[0_0_6px_rgba(16,185,129,0.8)] border border-white"></span>
+              <div class="flex-1 min-w-0">
+                <span class="block text-[9px] uppercase tracking-wider font-extrabold text-slate-500">Pickup</span>
+                <input id="pickupInput" type="text" value="Connaught Place Alley, New Delhi" class="w-full bg-transparent text-xs font-black text-slate-900 focus:outline-none truncate" placeholder="Enter pickup address...">
+              </div>
+              <span id="pickupTypeBadge" class="text-[9px] bg-amber-500/15 text-amber-950 border border-amber-500/30 font-black px-2 py-0.5 rounded-full">Narrow Lane</span>
+            </div>
+
+            <div class="border-t border-slate-200/70"></div>
+
+            <!-- Destination Row -->
+            <div class="flex items-center space-x-2.5">
+              <span class="w-3 h-3 rounded-full bg-rose-500 shrink-0 shadow-[0_0_6px_rgba(244,63,94,0.8)] border border-white"></span>
+              <div class="flex-1 min-w-0">
+                <span class="block text-[9px] uppercase tracking-wider font-extrabold text-slate-500">Destination</span>
+                <input id="dropInput" type="text" value="Cyber Hub, DLF Phase 2, Gurugram" class="w-full bg-transparent text-xs font-black text-slate-900 focus:outline-none truncate" placeholder="Enter destination...">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Grounded Availability Bar in Liquid Glass -->
+        <div id="upfrontProbabilityCard" class="liquid-glass-card bg-amber-50/60 border border-amber-300/60 rounded-2xl px-3.5 py-2.5 flex items-center justify-between transition shadow-xs">
+          <div class="flex items-center space-x-2.5">
+            <span class="w-2.5 h-2.5 rounded-full bg-amber-500 animate-ping"></span>
+            <div>
+              <span class="block text-[11px] font-extrabold text-amber-950">Estimated Captain Match Rate</span>
+              <p id="upfrontStatusHint" class="text-[10px] text-amber-900 font-semibold">Narrow lane • Higher wait expected</p>
+            </div>
+          </div>
+          <div class="text-right">
+            <span id="upfrontPercentText" class="block text-sm font-black text-amber-950">~35%</span>
+            <span id="upfrontStatusBadge" class="text-[9px] font-black text-amber-800 uppercase bg-amber-500/20 px-1.5 py-0.2 rounded-md">Moderate</span>
+          </div>
+        </div>
+
+        <!-- Vehicle Selection Cards -->
+        <div class="space-y-2">
+          <!-- Bike Option (Selected) -->
+          <div id="bikeOptionCard" class="cursor-pointer border-2 border-slate-900 bg-white/80 backdrop-blur-md rounded-2xl p-2.5 flex items-center justify-between transition shadow-sm">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-amber-400 flex items-center justify-center text-slate-900 text-base shadow-sm font-black">
+                🏍️
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <h4 class="font-extrabold text-xs text-slate-900">RapidGo Bike</h4>
+                  <span class="bg-slate-900 text-white font-black text-[8px] px-1.5 py-0.2 rounded-full">₹12/KM</span>
+                </div>
+                <p id="bikeEtaSubtext" class="text-[11px] text-slate-600 font-medium">2 min away • ~36 min ride</p>
+              </div>
+            </div>
+            <div class="text-right">
+              <span id="bikePriceDisplay" class="block font-black text-sm text-slate-900">₹287</span>
+              <span id="bikeBaseDisplay" class="text-[10px] text-slate-500 line-through">₹320</span>
+            </div>
+          </div>
+
+          <!-- Auto Option -->
+          <div class="cursor-pointer liquid-glass-card rounded-2xl p-2.5 flex items-center justify-between opacity-80 hover:opacity-100 transition">
+            <div class="flex items-center space-x-3">
+              <div class="w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-base">🛺</div>
+              <div>
+                <h4 class="font-extrabold text-xs text-slate-900">RapidGo Auto</h4>
+                <p class="text-[11px] text-slate-600 font-medium">Covered ride • ₹16/km base</p>
+              </div>
+            </div>
+            <span id="autoPriceDisplay" class="font-black text-xs text-slate-900">₹382</span>
+          </div>
+        </div>
+
+        <!-- Book Action CTA -->
+        <button id="bookBikeBtn" class="liquid-btn-dark w-full text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-[0_8px_20px_rgba(15,23,42,0.25)] transition active:scale-[0.99] flex items-center justify-center gap-2">
+          <span>Request RapidGo Bike</span>
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M14 5l7 7m0 0l-7 7m7-7H3"/></svg>
+        </button>
+      </div>
+
+
+      <!-- ======================================================= -->
+      <!-- STATE 2: GROUNDED DISPATCH & SMART ALTERNATIVES (LIQUID) -->
+      <!-- ======================================================= -->
+      <div id="stateSearching" class="hidden p-4 pt-1 space-y-3">
+        
+        <!-- Live Dispatch Header with Radar -->
+        <div class="flex items-center justify-between pb-1.5 border-b border-slate-200/60">
+          <div class="flex items-center space-x-2.5">
+            <div class="relative flex items-center justify-center w-5 h-5">
+              <span class="w-5 h-5 rounded-full bg-slate-900/15 radar-ping-1 absolute"></span>
+              <span class="w-5 h-5 rounded-full bg-slate-900/15 radar-ping-2 absolute"></span>
+              <span class="w-2.5 h-2.5 rounded-full bg-slate-900"></span>
+            </div>
+            <div>
+              <span class="text-xs font-extrabold text-slate-900 block leading-tight">Connecting to nearby Captains</span>
+              <span class="text-[10px] text-slate-600 font-semibold">Checking drivers within 2 km radius</span>
+            </div>
+          </div>
+          <span id="searchTimer" class="text-xs font-mono font-bold text-slate-800 bg-white/80 border border-slate-200 px-2.5 py-1 rounded-xl shadow-xs">00:18</span>
+        </div>
+
+        <!-- GROUNDED SUPPLY & MATCH ASSESSMENT CARD -->
+        <div id="chanceCardContainer" class="liquid-glass-card rounded-[22px] p-3.5 space-y-2.5 border border-slate-200/90 shadow-sm">
+          
+          <div class="flex items-center justify-between">
+            <span class="text-[11px] font-extrabold text-slate-900 flex items-center gap-1.5">
+              <span>Pickup Match Likelihood</span>
+            </span>
+            <span id="gaugeStatusPill" class="text-[10px] font-extrabold text-amber-950 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30">
+              Low Availability (~35%)
+            </span>
+          </div>
+
+          <!-- Clean Segmented Availability Bar in Glass -->
+          <div class="space-y-1">
+            <div class="w-full bg-slate-200/70 h-2.5 rounded-full overflow-hidden flex border border-slate-300/40">
+              <div id="chanceProgressBar" class="h-full bg-amber-500 rounded-full transition-all duration-700 shadow-xs" style="width: 35%"></div>
+            </div>
+            <div class="flex justify-between text-[9px] font-bold text-slate-500">
+              <span>Low (Lane bottleneck)</span>
+              <span>Average</span>
+              <span>High (Main road)</span>
+            </div>
+          </div>
+
+          <!-- Practical Real-World Dispatch Reasons -->
+          <div class="bg-white/80 backdrop-blur-md rounded-xl p-2.5 border border-slate-200/80 space-y-1.5 shadow-2xs">
+            <span class="block text-[10px] font-black text-slate-700 uppercase tracking-wide">Live Driver Conditions:</span>
+            <ul class="text-[11px] text-slate-600 space-y-1 font-medium">
+              <li class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span><strong>Narrow Access:</strong> Drivers avoid entering tight lanes during rush hour.</span>
+              </li>
+              <li class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></span>
+                <span><strong>Heavy Traffic:</strong> Outer Circle experiencing 1.3x delay.</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        <!-- ACTIONABLE ALTERNATIVES IN LIQUID GLASS -->
+        <div class="space-y-2">
+          <span class="block text-[10px] font-extrabold text-slate-600 uppercase tracking-wider px-0.5">Faster Options (Skip the wait):</span>
+
+          <!-- Alternative 1: Smart Micro-Walk (Liquid Emerald) -->
+          <div class="liquid-glass-card bg-emerald-50/50 border border-emerald-300/70 rounded-2xl p-3 space-y-2 shadow-xs">
+            <div class="flex items-start justify-between">
+              <div class="flex items-start space-x-2">
+                <span class="text-base">🚶‍♂️</span>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <h5 class="text-xs font-black text-slate-900">Walk 160m to Main Road</h5>
+                    <span class="bg-emerald-600 text-white font-extrabold text-[9px] px-1.5 py-0.2 rounded-full shadow-2xs">~85% Match</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 font-medium">2 min walk • 5 Captains active on Barakhamba Rd</p>
+                </div>
+              </div>
+            </div>
+
+            <button id="shiftPickupBtn" class="liquid-btn-green w-full text-white font-extrabold text-xs py-2.5 rounded-xl shadow-[0_4px_16px_rgba(5,150,105,0.3)] transition active:scale-[0.99] flex items-center justify-center gap-1.5">
+              <span>Shift Pickup & Match Faster</span>
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+            </button>
+          </div>
+
+          <!-- Alternative 2: DMRC Metro Transit (Liquid Sky) -->
+          <div class="liquid-glass-card bg-sky-50/50 border border-sky-300/70 rounded-2xl p-3 space-y-2 shadow-xs">
+            <div class="flex items-start justify-between">
+              <div class="flex items-start space-x-2">
+                <span class="text-base">🚇</span>
+                <div>
+                  <div class="flex items-center gap-1.5">
+                    <h5 class="text-xs font-black text-slate-900">Delhi Metro (DMRC)</h5>
+                    <span class="bg-sky-600 text-white font-extrabold text-[9px] px-1.5 py-0.2 rounded-full shadow-2xs">On Schedule</span>
+                  </div>
+                  <p class="text-[11px] text-slate-600 font-medium">Rajiv Chowk Station (220m walk) • ₹30 Fare</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center justify-between pt-1 border-t border-sky-200/80 text-[10px]">
+              <span class="text-slate-600 font-semibold">🌱 Zero traffic emissions</span>
+              <button id="chooseMetroBtn" class="font-extrabold text-sky-800 hover:text-sky-950 underline">View Metro Route →</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Cancel Searching Option -->
+        <button id="cancelSearchBtn" class="w-full text-slate-600 hover:text-slate-900 font-bold text-xs py-1.5 transition text-center">
+          Cancel Ride Request
+        </button>
+      </div>
+
+
+      <!-- ============================================== -->
+      <!-- STATE 3: CAPTAIN MATCHED & LIVE RIDE TRACKING  -->
+      <!-- ============================================== -->
+      <div id="stateMatched" class="hidden p-4 pt-1 space-y-3">
+        
+        <!-- Match Banner -->
+        <div class="liquid-glass-card bg-emerald-50/70 border border-emerald-300/80 rounded-2xl p-3 flex items-center justify-between shadow-xs">
+          <div class="flex items-center space-x-2">
+            <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping"></span>
+            <span class="text-xs font-extrabold text-emerald-950">Captain Confirmed & En Route</span>
+          </div>
+          <span class="text-xs font-black text-emerald-900 bg-white/90 px-2 py-0.5 rounded-full border border-emerald-200 shadow-2xs">ETA 2 MIN</span>
+        </div>
+
+        <!-- Captain Details in Glass -->
+        <div class="liquid-glass-card rounded-[22px] p-3.5 flex items-center justify-between shadow-sm">
+          <div class="flex items-center space-x-3">
+            <div class="w-11 h-11 rounded-2xl bg-amber-400 flex items-center justify-center text-lg font-bold shadow-md">
+              👨‍✈️
+            </div>
+            <div>
+              <div class="flex items-center gap-1.5">
+                <h4 class="font-extrabold text-xs text-slate-900">Rajesh Kumar</h4>
+                <span class="text-[10px] bg-slate-900/10 text-slate-900 px-1.5 py-0.2 rounded-full font-black">4.8 ★</span>
+              </div>
+              <p class="text-[11px] text-slate-600 font-medium">Hero Splendor • DL 01 AB 4321</p>
+              <p class="text-[9px] text-emerald-600 font-bold">✓ Verified Captain</p>
+            </div>
+          </div>
+
+          <!-- Trip Start OTP Box -->
+          <div class="text-right bg-white/95 p-2 rounded-xl border border-slate-200/90 shadow-2xs">
+            <span class="block text-[8px] uppercase tracking-wider font-extrabold text-slate-500">Start OTP</span>
+            <span class="font-mono font-black text-sm text-slate-900 tracking-wider">4 8 2 1</span>
+          </div>
+        </div>
+
+        <!-- Action Controls -->
+        <div class="grid grid-cols-2 gap-2.5">
+          <button id="callCaptainBtn" class="liquid-glass-card hover:bg-white text-slate-900 font-extrabold text-xs py-2.5 rounded-xl transition flex items-center justify-center gap-1.5 shadow-xs">
+            📞 Call Captain
+          </button>
+          <button id="safetySosBtn" class="bg-rose-500/10 hover:bg-rose-500/20 text-rose-800 font-extrabold text-xs py-2.5 rounded-xl transition border border-rose-300/70 flex items-center justify-center gap-1.5">
+            🛡️ Safety SOS
+          </button>
+        </div>
+
+        <!-- Simulation Progress Trigger -->
+        <button id="completeTripBtn" class="liquid-btn-dark w-full text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md transition active:scale-[0.99]">
+          Simulate Trip Arrival & Completion →
+        </button>
+      </div>
+
+
+      <!-- ============================================== -->
+      <!-- STATE 4: TRIP COMPLETED & CONSCIOUS RECEIPT   -->
+      <!-- ============================================== -->
+      <div id="stateCompleted" class="hidden p-4 pt-1 space-y-3">
+        
+        <div class="text-center space-y-0.5">
+          <div class="w-11 h-11 bg-emerald-500 text-white rounded-2xl flex items-center justify-center text-lg mx-auto font-black shadow-md shadow-emerald-500/25">
+            ✓
+          </div>
+          <h3 class="font-black text-sm text-slate-900">Trip Completed</h3>
+          <p class="text-xs text-slate-600 font-medium">Safe arrival at destination.</p>
+        </div>
+
+        <!-- Conscious Impact Badge in Glass -->
+        <div class="liquid-glass-card bg-emerald-50/70 border border-emerald-300/80 rounded-2xl p-3 text-xs text-emerald-950 space-y-1 shadow-xs">
+          <div class="flex justify-between font-black">
+            <span>🌱 Conscious Mobility Impact</span>
+            <span class="text-[10px] bg-emerald-500/20 text-emerald-950 px-2 py-0.2 rounded-full font-bold">Theme 04</span>
+          </div>
+          <p class="text-[11px] text-emerald-900 leading-relaxed font-medium">
+            By walking to the main road, you avoided alley dead-mileage, saved 12 minutes of idling, and prevented 180g of CO₂ emissions.
+          </p>
+        </div>
+
+        <!-- Dynamic Bill Details in Glass -->
+        <div class="liquid-glass-card rounded-2xl p-3.5 space-y-2 text-xs shadow-xs">
+          <div class="flex justify-between text-slate-600 font-medium">
+            <span id="receiptDistanceLabel">Distance (18.4 km @ ₹12/km)</span>
+            <span id="receiptBasePrice">₹221.00</span>
+          </div>
+          <div class="flex justify-between text-slate-600 font-medium">
+            <span id="receiptTrafficLabel">Traffic Surge (1.3x)</span>
+            <span id="receiptTrafficSurge">+₹66.00</span>
+          </div>
+          <div class="flex justify-between text-slate-600 font-medium">
+            <span>Optimization Discount</span>
+            <span class="text-emerald-600 font-bold">-₹15.00</span>
+          </div>
+          <div class="border-t border-slate-200/80 pt-1.5 flex justify-between font-black text-sm text-slate-900">
+            <span>Total Paid (UPI)</span>
+            <span id="receiptFinalTotal">₹287.00</span>
+          </div>
+        </div>
+
+        <!-- Rating Stars -->
+        <div class="text-center space-y-1">
+          <span class="text-[11px] font-bold text-slate-600">Rate Captain Rajesh Kumar</span>
+          <div class="flex justify-center space-x-2 text-xl text-amber-400 cursor-pointer">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+          </div>
+        </div>
+
+        <button id="bookAnotherBtn" class="liquid-btn-dark w-full text-white font-extrabold text-xs py-3.5 rounded-2xl shadow-md transition active:scale-[0.99]">
+          Book Another Ride
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Notification Toast in Glass -->
+    <div id="toastNotification" class="absolute top-14 left-4 right-4 z-50 liquid-glass-pill text-slate-900 text-xs font-bold px-4 py-2.5 rounded-2xl shadow-2xl flex items-center justify-between transform -translate-y-24 opacity-0 transition-all duration-300 pointer-events-none border border-white">
+      <div class="flex items-center space-x-2">
+        <span id="toastIcon">ℹ️</span>
+        <span id="toastMessage">Notification message</span>
+      </div>
+      <button id="toastCloseBtn" class="text-slate-400 hover:text-slate-900 text-xs font-bold">✕</button>
+    </div>
+
+  </div>
+
+  <script>
+    // State Variables
+    let currentStep = 'selection';
+    let selectionMode = 'pickup';
+    let currentMapLayer = 'streets';
+    let searchTimerInterval = null;
+    let searchSeconds = 0;
+    let map = null;
+    let streetTileLayer = null;
+    let satelliteTileLayer = null;
+    
+    let userMarker = null;
+    let dropMarker = null;
+    let alternativeMarker = null;
+    let metroMarker = null;
+    let captainMarkers = [];
+    let walkingPolyline = null;
+    let tripPolyline = null;
+
+    // Pricing Model Configuration
+    const FARE_CONFIG = {
+      bikeRatePerKm: 12.0,      // Exact ₹12/km
+      autoRatePerKm: 16.0,
+      baseFare: 25.0
+    };
+
+    // Active Coordinates
+    let pickupCoords = [28.6324, 77.2188]; // Shankar Market Alley, CP
+    let dropCoords = [28.4952, 77.0895];   // Cyber Hub, Gurugram
+
+    let currentTripDistanceKm = 18.4;
+    let currentTripDurationMin = 36;
+    let currentBikeFare = 287;
+    let currentAutoFare = 382;
+
+    const CAPTAINS_DATA = [
+      [28.6342, 77.2224],
+      [28.6298, 77.2238],
+      [28.6288, 77.2182],
+      [28.6358, 77.2172],
+      [28.6327, 77.2255],
+      [28.6272, 77.2218]
+    ];
+
+    // Haversine Distance (Urban Distance in KM)
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      return parseFloat((R * c * 1.25).toFixed(1));
+    }
+
+    // Dynamic Traffic Speed and Delay Multiplier
+    function evaluateTraffic(distanceKm) {
+      const now = new Date();
+      const hour = now.getHours();
+      const isPeak = (hour >= 8 && hour <= 11) || (hour >= 17 && hour <= 21);
+      
+      const multiplier = isPeak ? 1.30 : 1.05;
+      const avgSpeed = isPeak ? 22 : 36; // Delhi urban km/h
+      const durationMins = Math.round((distanceKm / avgSpeed) * 60) + 4;
+      const delayMins = isPeak ? Math.round(durationMins * 0.25) : 2;
+
+      return {
+        multiplier,
+        label: isPeak ? "Peak Traffic • 1.3x" : "Normal Flow • 1.05x",
+        badgeClass: isPeak 
+          ? "bg-amber-500/15 text-amber-950 border border-amber-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs"
+          : "bg-emerald-500/15 text-emerald-950 border border-emerald-500/30 px-2 py-0.5 rounded-full text-[10px] font-bold flex items-center gap-1 shadow-xs",
+        dotClass: isPeak ? "w-1.5 h-1.5 rounded-full bg-amber-500" : "w-1.5 h-1.5 rounded-full bg-emerald-500",
+        durationMins: Math.max(durationMins, 8),
+        delayMins
+      };
+    }
+
+    // Recalculate Trip Fares & ETA
+    function recalculateTripFares() {
+      currentTripDistanceKm = calculateDistance(
+        pickupCoords[0], pickupCoords[1],
+        dropCoords[0], dropCoords[1]
+      );
+      if (currentTripDistanceKm < 1.0) currentTripDistanceKm = 1.2;
+
+      const traffic = evaluateTraffic(currentTripDistanceKm);
+      currentTripDurationMin = traffic.durationMins;
+
+      // Update Header
+      document.getElementById('trafficLabel').textContent = traffic.label;
+      document.getElementById('trafficBadge').className = traffic.badgeClass;
+      document.getElementById('trafficDot').className = traffic.dotClass;
+
+      // Calculate Fare: (Distance * 12) * TrafficMultiplier + Base
+      const rawBikeFare = (currentTripDistanceKm * FARE_CONFIG.bikeRatePerKm) * traffic.multiplier + FARE_CONFIG.baseFare;
+      currentBikeFare = Math.round(rawBikeFare);
+      const originalPreDiscount = Math.round(currentBikeFare * 1.15);
+
+      const rawAutoFare = (currentTripDistanceKm * FARE_CONFIG.autoRatePerKm) * traffic.multiplier + FARE_CONFIG.baseFare;
+      currentAutoFare = Math.round(rawAutoFare);
+
+      // Update Map Top Bar
+      document.getElementById('routeDistanceDisplay').textContent = `${currentTripDistanceKm} km`;
+      document.getElementById('routeDurationDisplay').textContent = `~${currentTripDurationMin} mins`;
+      document.getElementById('delayBadge').textContent = `+${traffic.delayMins}m delay`;
+
+      // Update Cards
+      document.getElementById('bikePriceDisplay').textContent = `₹${currentBikeFare}`;
+      document.getElementById('bikeBaseDisplay').textContent = `₹${originalPreDiscount}`;
+      document.getElementById('autoPriceDisplay').textContent = `₹${currentAutoFare}`;
+      document.getElementById('bikeEtaSubtext').textContent = `2 min away • ~${currentTripDurationMin} min ride`;
+
+      // Update Receipt
+      const baseDistanceOnly = (currentTripDistanceKm * FARE_CONFIG.bikeRatePerKm).toFixed(2);
+      const trafficSurgeOnly = ((currentTripDistanceKm * FARE_CONFIG.bikeRatePerKm) * (traffic.multiplier - 1)).toFixed(2);
+      document.getElementById('receiptDistanceLabel').textContent = `Distance (${currentTripDistanceKm} km @ ₹12/km)`;
+      document.getElementById('receiptBasePrice').textContent = `₹${baseDistanceOnly}`;
+      document.getElementById('receiptTrafficLabel').textContent = `Traffic Surge (${traffic.multiplier}x)`;
+      document.getElementById('receiptTrafficSurge').textContent = `+₹${trafficSurgeOnly}`;
+      document.getElementById('receiptFinalTotal').textContent = `₹${currentBikeFare}.00`;
+
+      if (tripPolyline) {
+        tripPolyline.setLatLngs([pickupCoords, dropCoords]);
+      }
+    }
+
+    // Grounded Probability Assessment Engine
+    function calculateProbabilityForPickup(lat, lng, name) {
+      const lower = name.toLowerCase();
+      let prob = 75;
+      let typeLabel = "Main Road";
+      let badgeClass = "text-[9px] bg-emerald-500/15 text-emerald-950 border border-emerald-500/30 font-black px-2 py-0.5 rounded-full";
+      let hint = "Direct road • High Captain availability";
+
+      if (lower.includes('gali') || lower.includes('alley') || lower.includes('market') || lower.includes('village') || lower.includes('lane') || lower.includes('mohalla')) {
+        prob = 35;
+        typeLabel = "Narrow Lane";
+        badgeClass = "text-[9px] bg-amber-500/15 text-amber-950 border border-amber-500/30 font-black px-2 py-0.5 rounded-full";
+        hint = "Narrow lane • Higher wait expected";
+      } else if (lower.includes('metro') || lower.includes('road') || lower.includes('marg') || lower.includes('circle') || lower.includes('expressway')) {
+        prob = 85;
+        typeLabel = "Main Road";
+        badgeClass = "text-[9px] bg-emerald-500/15 text-emerald-950 border border-emerald-500/30 font-black px-2 py-0.5 rounded-full";
+        hint = "Wide arterial • Fast pickup expected";
+      } else {
+        prob = 45 + Math.abs(Math.round((lat * 1000) % 35));
+        if (prob < 60) {
+          typeLabel = "Inner Sector";
+          badgeClass = "text-[9px] bg-amber-500/15 text-amber-950 border border-amber-500/30 font-black px-2 py-0.5 rounded-full";
+          hint = "Moderate access • Normal queue";
+        }
+      }
+
+      return { prob, typeLabel, badgeClass, hint };
+    }
+
+    function updateUpfrontDisplay(name, lat, lng) {
+      const calc = calculateProbabilityForPickup(lat, lng, name);
+
+      const typeBadge = document.getElementById('pickupTypeBadge');
+      const upfrontCard = document.getElementById('upfrontProbabilityCard');
+      const upfrontPercent = document.getElementById('upfrontPercentText');
+      const upfrontBadge = document.getElementById('upfrontStatusBadge');
+      const upfrontHint = document.getElementById('upfrontStatusHint');
+
+      typeBadge.textContent = calc.typeLabel;
+      typeBadge.className = calc.badgeClass;
+      upfrontPercent.textContent = `~${calc.prob}%`;
+      upfrontHint.textContent = calc.hint;
+
+      if (calc.prob >= 70) {
+        upfrontCard.className = "liquid-glass-card bg-emerald-50/60 border border-emerald-300/60 rounded-2xl px-3.5 py-2.5 flex items-center justify-between transition shadow-xs";
+        upfrontBadge.textContent = "High Match";
+        upfrontBadge.className = "text-[9px] font-black text-emerald-950 uppercase bg-emerald-500/20 px-1.5 py-0.2 rounded-md";
+      } else {
+        upfrontCard.className = "liquid-glass-card bg-amber-50/60 border border-amber-300/60 rounded-2xl px-3.5 py-2.5 flex items-center justify-between transition shadow-xs";
+        upfrontBadge.textContent = "Moderate";
+        upfrontBadge.className = "text-[9px] font-black text-amber-800 uppercase bg-amber-500/20 px-1.5 py-0.2 rounded-md";
+      }
+    }
+
+    function updatePickupLocation(lat, lng, name) {
+      pickupCoords = [lat, lng];
+      userMarker.setLatLng(pickupCoords);
+      userMarker.bindPopup(`<b>Pickup:</b> ${name}`).openPopup();
+      document.getElementById('pickupInput').value = name;
+
+      const altLat = lat - 0.0009;
+      const altLng = lng + 0.0022;
+      alternativeMarker.setLatLng([altLat, altLng]);
+      walkingPolyline.setLatLngs([[lat, lng], [altLat, altLng]]);
+
+      updateUpfrontDisplay(name, lat, lng);
+      recalculateTripFares();
+    }
+
+    function updateDropLocation(lat, lng, name) {
+      dropCoords = [lat, lng];
+      dropMarker.setLatLng(dropCoords);
+      dropMarker.bindPopup(`<b>Destination:</b> ${name}`).openPopup();
+      document.getElementById('dropInput').value = name;
+      recalculateTripFares();
+    }
+
+    // Interchange / Swap Function
+    function interchangeLocations() {
+      const icon = document.getElementById('interchangeIcon');
+      icon.classList.add('rotate-180');
+      setTimeout(() => icon.classList.remove('rotate-180'), 300);
+
+      const oldPickupName = document.getElementById('pickupInput').value;
+      const oldDropName = document.getElementById('dropInput').value;
+      const oldPickupCoords = [...pickupCoords];
+      const oldDropCoords = [...dropCoords];
+
+      // Swap
+      updatePickupLocation(oldDropCoords[0], oldDropCoords[1], oldDropName);
+      updateDropLocation(oldPickupCoords[0], oldPickupCoords[1], oldPickupName);
+
+      showToast("Pickup and Destination interchanged", "⇄");
+    }
+
+    // Map Initialization
+    function initMap() {
+      map = L.map('map', { 
+        zoomControl: false,
+        attributionControl: false
+      }).setView(pickupCoords, 14);
+
+      streetTileLayer = L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+      satelliteTileLayer = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 19 });
+
+      const userIcon = L.divIcon({
+        className: 'custom-user-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-7 h-7 cursor-grab">
+            <div class="w-3.5 h-3.5 bg-emerald-500 rounded-full border-2 border-white shadow-md"></div>
+          </div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+
+      const dropIcon = L.divIcon({
+        className: 'custom-drop-icon',
+        html: `
+          <div class="flex items-center justify-center w-7 h-7 bg-rose-600 rounded-xl text-white text-[11px] border-2 border-white shadow-md font-bold cursor-grab">
+            🏁
+          </div>`,
+        iconSize: [28, 28],
+        iconAnchor: [14, 14]
+      });
+
+      const mainRoadIcon = L.divIcon({
+        className: 'custom-alt-icon',
+        html: `
+          <div class="flex items-center justify-center w-8 h-8 bg-emerald-600 rounded-xl text-white text-xs border-2 border-white shadow-md font-bold">
+            🚶
+          </div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      const metroIcon = L.divIcon({
+        className: 'custom-metro-icon',
+        html: `
+          <div class="flex items-center justify-center w-8 h-8 bg-sky-600 rounded-xl text-white text-xs border-2 border-white shadow-md font-bold">
+            🚇
+          </div>`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 16]
+      });
+
+      userMarker = L.marker(pickupCoords, { icon: userIcon, draggable: true }).addTo(map);
+      userMarker.bindPopup("<b>Pickup:</b> Drag to adjust");
+      userMarker.on('dragend', function(e) {
+        const pt = e.target.getLatLng();
+        updatePickupLocation(pt.lat, pt.lng, `Pickup (${pt.lat.toFixed(4)}, ${pt.lng.toFixed(4)})`);
+        showToast("Pickup pin updated", "📍");
+      });
+
+      dropMarker = L.marker(dropCoords, { icon: dropIcon, draggable: true }).addTo(map);
+      dropMarker.bindPopup("<b>Destination:</b> Drag to adjust");
+      dropMarker.on('dragend', function(e) {
+        const pt = e.target.getLatLng();
+        updateDropLocation(pt.lat, pt.lng, `Destination (${pt.lat.toFixed(4)}, ${pt.lng.toFixed(4)})`);
+        showToast("Destination updated", "🏁");
+      });
+
+      const altPos = [pickupCoords[0] - 0.0009, pickupCoords[1] + 0.0022];
+      alternativeMarker = L.marker(altPos, { icon: mainRoadIcon }).addTo(map);
+      alternativeMarker.bindPopup("<b>Main Road Node:</b> ~85% Match Rate");
+
+      metroMarker = L.marker([28.6328, 77.2195], { icon: metroIcon }).addTo(map);
+      metroMarker.bindPopup("<b>Delhi Metro Station:</b> Scheduled transit");
+
+      tripPolyline = L.polyline([pickupCoords, dropCoords], { color: '#0F172A', weight: 3.5, opacity: 0.85 }).addTo(map);
+      walkingPolyline = L.polyline([pickupCoords, altPos], { color: '#059669', weight: 3, dashArray: '5, 5', opacity: 0.9 }).addTo(map);
+
+      const bikeIcon = L.divIcon({
+        className: 'custom-bike-icon',
+        html: `<div class="flex items-center justify-center w-6 h-6 bg-slate-900 rounded-lg text-[10px] shadow border border-amber-400">🏍️</div>`,
+        iconSize: [24, 24],
+        iconAnchor: [12, 12]
+      });
+
+      CAPTAINS_DATA.forEach((coord, idx) => {
+        const marker = L.marker(coord, { icon: bikeIcon }).addTo(map);
+        marker.bindPopup(`<b>Captain #${idx+1}</b><br>Available`);
+        captainMarkers.push(marker);
+      });
+
+      map.on('click', function(e) {
+        if (selectionMode === 'pickup') {
+          updatePickupLocation(e.latlng.lat, e.latlng.lng, `Point (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`);
+          showToast("Set as new Pickup Location", "📍");
+        } else {
+          updateDropLocation(e.latlng.lat, e.latlng.lng, `Point (${e.latlng.lat.toFixed(4)}, ${e.latlng.lng.toFixed(4)})`);
+          showToast("Set as new Destination", "🏁");
+        }
+      });
+
+      recalculateTripFares();
+      setTimeout(() => { map.invalidateSize(); }, 300);
+
+      // Captain Jiggle
+      setInterval(() => {
+        captainMarkers.forEach((marker) => {
+          const pos = marker.getLatLng();
+          const latOffset = (Math.random() - 0.5) * 0.0003;
+          const lngOffset = (Math.random() - 0.5) * 0.0003;
+          marker.setLatLng([pos.lat + latOffset, pos.lng + lngOffset]);
+        });
+      }, 3000);
+    }
+
+    // Step Switcher
+    function setStep(step) {
+      currentStep = step;
+      document.getElementById('stateRideSelection').classList.add('hidden');
+      document.getElementById('stateSearching').classList.add('hidden');
+      document.getElementById('stateMatched').classList.add('hidden');
+      document.getElementById('stateCompleted').classList.add('hidden');
+
+      if (step === 'selection') {
+        document.getElementById('stateRideSelection').classList.remove('hidden');
+        stopSearchTimer();
+      } else if (step === 'searching') {
+        document.getElementById('stateSearching').classList.remove('hidden');
+        startSearchTimer();
+        const calc = calculateProbabilityForPickup(pickupCoords[0], pickupCoords[1], document.getElementById('pickupInput').value);
+        updateDispatchBar(calc.prob);
+      } else if (step === 'matched') {
+        document.getElementById('stateMatched').classList.remove('hidden');
+        stopSearchTimer();
+        if (captainMarkers.length > 0) {
+          captainMarkers[0].setLatLng(pickupCoords);
+          map.panTo(pickupCoords);
+        }
+      } else if (step === 'completed') {
+        document.getElementById('stateCompleted').classList.remove('hidden');
+      }
+
+      if (map) setTimeout(() => map.invalidateSize(), 200);
+    }
+
+    // Grounded Dispatch Bar Update (Clean Progress Fill)
+    function updateDispatchBar(percent) {
+      const progressBar = document.getElementById('chanceProgressBar');
+      const statusPill = document.getElementById('gaugeStatusPill');
+
+      progressBar.style.width = `${percent}%`;
+
+      if (percent >= 70) {
+        progressBar.className = 'h-full bg-emerald-500 rounded-full transition-all duration-700 shadow-xs';
+        statusPill.textContent = `High Availability (~${percent}%)`;
+        statusPill.className = 'text-[10px] font-extrabold text-emerald-950 bg-emerald-500/20 px-2.5 py-0.5 rounded-full border border-emerald-500/30';
+      } else {
+        progressBar.className = 'h-full bg-amber-500 rounded-full transition-all duration-700 shadow-xs';
+        statusPill.textContent = `Low Availability (~${percent}%)`;
+        statusPill.className = 'text-[10px] font-extrabold text-amber-950 bg-amber-500/20 px-2.5 py-0.5 rounded-full border border-amber-500/30';
+      }
+    }
+
+    // Search Timer
+    function startSearchTimer() {
+      searchSeconds = 0;
+      clearInterval(searchTimerInterval);
+      searchTimerInterval = setInterval(() => {
+        searchSeconds++;
+        const mins = String(Math.floor(searchSeconds / 60)).padStart(2, '0');
+        const secs = String(searchSeconds % 60).padStart(2, '0');
+        document.getElementById('searchTimer').textContent = `${mins}:${secs}`;
+      }, 1000);
+    }
+
+    function stopSearchTimer() {
+      clearInterval(searchTimerInterval);
+    }
+
+    // Toast
+    function showToast(message, icon = 'ℹ️') {
+      const toast = document.getElementById('toastNotification');
+      document.getElementById('toastMessage').textContent = message;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('-translate-y-24', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.add('-translate-y-24', 'opacity-0');
+        toast.classList.remove('translate-y-0', 'opacity-100');
+      }, 3000);
+    }
+
+    // Event Listeners
+    document.addEventListener('DOMContentLoaded', () => {
+      initMap();
+
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('liveClock').textContent = 
+          `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      }, 1000);
+
+      // Dedicated Interchange Button Listener
+      document.getElementById('interchangeBtn').addEventListener('click', interchangeLocations);
+
+      // Mode Selector
+      document.getElementById('modePickupBtn').addEventListener('click', () => {
+        selectionMode = 'pickup';
+        document.getElementById('modePickupBtn').className = "text-[10px] font-extrabold px-2.5 py-1 rounded-xl bg-slate-900 text-white transition flex items-center gap-1.5 shadow-xs";
+        document.getElementById('modeDropBtn').className = "text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-700 hover:text-slate-950 transition flex items-center gap-1.5";
+        showToast("Click map to place Pickup", "📍");
+      });
+
+      document.getElementById('modeDropBtn').addEventListener('click', () => {
+        selectionMode = 'drop';
+        document.getElementById('modeDropBtn').className = "text-[10px] font-extrabold px-2.5 py-1 rounded-xl bg-rose-600 text-white transition flex items-center gap-1.5 shadow-xs";
+        document.getElementById('modePickupBtn').className = "text-[10px] font-bold px-2.5 py-1 rounded-xl text-slate-700 hover:text-slate-950 transition flex items-center gap-1.5";
+        showToast("Click map to place Destination", "🏁");
+      });
+
+      // Address Input Listeners
+      document.getElementById('pickupInput').addEventListener('change', (e) => {
+        updateUpfrontDisplay(e.target.value, pickupCoords[0], pickupCoords[1]);
+        recalculateTripFares();
+        showToast("Pickup address updated", "📍");
+      });
+
+      document.getElementById('dropInput').addEventListener('change', () => {
+        recalculateTripFares();
+        showToast("Destination updated", "🏁");
+      });
+
+      // Layer Toggles
+      document.getElementById('layerStreetBtn').addEventListener('click', () => {
+        if (currentMapLayer !== 'streets') {
+          map.removeLayer(satelliteTileLayer);
+          map.addLayer(streetTileLayer);
+          currentMapLayer = 'streets';
+          document.getElementById('layerStreetBtn').className = "bg-slate-900 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition shadow-xs";
+          document.getElementById('layerSatelliteBtn').className = "text-slate-700 hover:text-slate-950 px-2.5 py-1 rounded-lg text-[10px] font-bold transition";
+          showToast("Switched to Street Map", "🗺️");
+        }
+      });
+
+      document.getElementById('layerSatelliteBtn').addEventListener('click', () => {
+        if (currentMapLayer !== 'satellite') {
+          map.removeLayer(streetTileLayer);
+          map.addLayer(satelliteTileLayer);
+          currentMapLayer = 'satellite';
+          document.getElementById('layerSatelliteBtn').className = "bg-slate-900 text-white px-2.5 py-1 rounded-lg text-[10px] font-bold transition shadow-xs";
+          document.getElementById('layerStreetBtn').className = "text-slate-700 hover:text-slate-950 px-2.5 py-1 rounded-lg text-[10px] font-bold transition";
+          showToast("Switched to Satellite View", "🛰️");
+        }
+      });
+
+      // GPS
+      document.getElementById('liveGpsBtn').addEventListener('click', () => {
+        if ('geolocation' in navigator) {
+          showToast("Reading GPS coordinates...", "🛰️");
+          navigator.geolocation.getCurrentPosition(
+            (pos) => {
+              updatePickupLocation(pos.coords.latitude, pos.coords.longitude, `Live Location (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`);
+              map.setView([pos.coords.latitude, pos.coords.longitude], 15);
+              showToast("Centered on your GPS location", "📍");
+            },
+            () => showToast("GPS unavailable, centered on CP", "⚠️"),
+            { timeout: 8000 }
+          );
+        }
+      });
+
+      document.getElementById('recenterBtn').addEventListener('click', () => {
+        map.setView(pickupCoords, 14);
+      });
+
+      // Flow Buttons
+      document.getElementById('bookBikeBtn').addEventListener('click', () => {
+        setStep('searching');
+        showToast("Requesting Captains nearby...", "🏍️");
+      });
+
+      document.getElementById('shiftPickupBtn').addEventListener('click', () => {
+        const altPos = alternativeMarker.getLatLng();
+        updatePickupLocation(altPos.lat, altPos.lng, "Barakhamba Road Gate 2");
+        map.setView(altPos, 15);
+        updateDispatchBar(85);
+        showToast("Relocated to Main Road! Fast match expected", "🚶‍♂️");
+
+        setTimeout(() => {
+          setStep('matched');
+          showToast("Captain Rajesh Kumar accepted ride!", "🏍️");
+        }, 1600);
+      });
+
+      document.getElementById('chooseMetroBtn').addEventListener('click', () => {
+        map.setView([28.6328, 77.2195], 16);
+        metroMarker.openPopup();
+        showToast("Transit route to Rajiv Chowk Metro active", "🚇");
+      });
+
+      document.getElementById('cancelSearchBtn').addEventListener('click', () => {
+        setStep('selection');
+      });
+
+      document.getElementById('completeTripBtn').addEventListener('click', () => {
+        setStep('completed');
+        showToast("Trip completed", "🌱");
+      });
+
+      document.getElementById('bookAnotherBtn').addEventListener('click', () => {
+        setStep('selection');
+      });
+
+      document.getElementById('toastCloseBtn').addEventListener('click', () => {
+        document.getElementById('toastNotification').classList.add('-translate-y-24', 'opacity-0');
+      });
+
+      document.getElementById('callCaptainBtn').addEventListener('click', () => {
+        showToast("Calling Captain Rajesh...", "📞");
+      });
+
+      document.getElementById('safetySosBtn').addEventListener('click', () => {
+        showToast("Emergency Safety active", "🛡️");
+      });
+    });
+  </script>
+</body>
+</html>
